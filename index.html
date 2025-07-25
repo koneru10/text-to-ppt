@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text to PowerPoint Converter</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --theme-professional: #1e3a8a;
+            --theme-creative: #6d28d9;
+            --theme-corporate: #047857;
+            --theme-modern: #b91c1c;
+            --background-gradient: linear-gradient(135deg, #1e3a8a, #6b7280);
+            --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            background: var(--background-gradient);
+            min-height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #1f2937;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .main-container {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            margin: 2rem auto;
+            max-width: 1400px;
+            overflow: hidden;
+        }
+
+        .header-section {
+            background: var(--background-gradient);
+            color: #ffffff;
+            padding: 3rem 2rem;
+            text-align: center;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .header-icon {
+            width: 64px;
+            height: 64px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.5rem;
+            transition: var(--transition);
+        }
+
+        .header-section h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-section p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .slide-preview {
+            aspect-ratio: 16/9;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+            position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .slide-preview:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .slide-content {
+            padding: 2rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .slide-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--theme-professional);
+        }
+
+        .slide-subtitle {
+            font-size: 1rem;
+            color: #4b5563;
+            font-style: italic;
+        }
+
+        .bullet-point, .numbered-point {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .bullet-icon {
+            width: 10px;
+            height: 10px;
+            background: var(--theme-professional);
+            border-radius: 50%;
+            margin-top: 0.5rem;
+        }
+
+        .number-badge {
+            width: 28px;
+            height: 28px;
+            background: var(--theme-professional);
+            color: #ffffff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .processing-animation {
+            display: none;
+            text-align: left;
+            padding: 1rem;
+        }
+
+        .processing-animation.active {
+            display: block;
+        }
+
+        .processing-step {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            opacity: 0;
+            animation: fadeInUp 0.5s ease forwards;
+        }
+
+        .processing-step:nth-child(1) { animation-delay: 0.2s; }
+        .processing-step:nth-child(2) { animation-delay: 0.8s; }
+        .processing-step:nth-child(3) { animation-delay: 1.4s; }
+
+        .processing-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--theme-professional);
+            border-radius: 50%;
+            animation: pulse 1.2s infinite;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+        }
+
+        .presentation-mode {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #111827;
+            z-index: 10000;
+            display: none;
+            flex-direction: column;
+        }
+
+        .presentation-mode.active {
+            display: flex;
+        }
+
+        .presentation-slide {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .presentation-content {
+            width: 100%;
+            max-width: 1200px;
+            height: 80vh;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 3rem;
+            overflow: auto;
+            box-shadow: var(--card-shadow);
+        }
+
+        .presentation-controls {
+            background: #1f2937;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #ffffff;
+        }
+
+        .btn {
+            border-radius: 8px;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .btn-generate {
+            background: var(--background-gradient);
+            color: #ffffff;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            border: none;
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--card-shadow);
+        }
+
+        .btn-generate:disabled {
+            background: #6b7280;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .settings-card {
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            border: none;
+            transition: var(--transition);
+        }
+
+        .card-header-custom {
+            background: #f3f4f6;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 1rem 1.5rem;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--theme-professional);
+            box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+        }
+
+        .theme-preview {
+            height: 50px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .theme-preview.active {
+            border: 2px solid var(--theme-professional);
+            transform: scale(1.02);
+        }
+
+        .theme-professional .theme-preview { background: linear-gradient(45deg, #1e3a8a, #3b82f6); }
+        .theme-creative .theme-preview { background: linear-gradient(45deg, #6d28d9, #a855f7); }
+        .theme-corporate .theme-preview { background: linear-gradient(45deg, #047857, #10b981); }
+        .theme-modern .theme-preview { background: linear-gradient(45deg, #b91c1c, #f97316); }
+
+        .slide-counter {
+            background: rgba(30, 58, 138, 0.1);
+            border: 1px solid rgba(30, 58, 138, 0.2);
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            color: var(--theme-professional);
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 992px) {
+            .header-section {
+                padding: 2rem 1rem;
+            }
+            .header-section h1 {
+                font-size: 2rem;
+            }
+            .slide-preview {
+                aspect-ratio: 4/3;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .main-container {
+                margin: 1rem;
+                border-radius: 12px;
+            }
+            .header-section {
+                padding: 1.5rem 1rem;
+            }
+            .header-section h1 {
+                font-size: 1.8rem;
+            }
+            .header-icon {
+                width: 48px;
+                height: 48px;
+                font-size: 1.2rem;
+            }
+            .presentation-content {
+                padding: 1.5rem;
+                height: 70vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="main-container">
+            <div class="header-section">
+                <div class="header-icon">
+                    <i class="fas fa-magic"></i>
+                </div>
+                <h1>Text to PowerPoint Converter</h1>
+                <p>Create stunning presentations from text with AI-powered design</p>
+            </div>
+            <div class="container-fluid p-4">
+                <div class="row g-4">
+                    <div class="col-lg-8">
+                        <div class="card settings-card mb-4">
+                            <div class="card-header card-header-custom">
+                                <h5 class="mb-0"><i class="fas fa-file-text me-2"></i>Input Text</h5>
+                            </div>
+                            <div class="card-body">
+                                <textarea id="inputText" class="form-control mb-3" rows="12" placeholder="Paste your text here or use the sample content..."></textarea>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button id="useSampleBtn" class="btn btn-outline-secondary"><i class="fas fa-clipboard me-1"></i>Use Sample Text</button>
+                                    <button id="clearTextBtn" class="btn btn-outline-secondary"><i class="fas fa-trash me-1"></i>Clear</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card settings-card">
+                            <div class="card-header card-header-custom">
+                                <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Presentation Settings</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label"><i class="fas fa-palette me-1"></i>Theme</label>
+                                        <select id="themeSelect" class="form-select">
+                                            <option value="professional">Professional</option>
+                                            <option value="creative">Creative</option>
+                                            <option value="corporate">Corporate</option>
+                                            <option value="modern">Modern</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label"><i class="fas fa-layout me-1"></i>Layout</label>
+                                        <select id="layoutSelect" class="form-select">
+                                            <option value="standard">Standard</option>
+                                            <option value="minimal">Minimal</option>
+                                            <option value="detailed">Detailed</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label"><i class="fas fa-text-height me-1"></i>Font Size</label>
+                                        <select id="fontSizeSelect" class="form-select">
+                                            <option value="small">Small</option>
+                                            <option value="medium" selected>Medium</option>
+                                            <option value="large">Large</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Slides per Topic</label>
+                                        <select id="slidesPerTopicSelect" class="form-select">
+                                            <option value="auto" selected>Auto</option>
+                                            <option value="1">1 Slide</option>
+                                            <option value="2">2 Slides</option>
+                                            <option value="3">3 Slides</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="includeIntro" checked>
+                                            <label class="form-check-label" for="includeIntro">Include intro slide</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="includeConclusion" checked>
+                                            <label class="form-check-label" for="includeConclusion">Include conclusion slide</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card settings-card mb-4">
+                            <div class="card-header card-header-custom">
+                                <h5 class="mb-0">Generate Presentation</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <button id="generateBtn" class="btn btn-generate w-100 mb-3"><i class="fas fa-magic me-2"></i>Generate Slides</button>
+                                <div id="processingAnimation" class="processing-animation">
+                                    <div class="processing-step">
+                                        <div class="processing-dot"></div>
+                                        <small class="text-muted">Analyzing text structure...</small>
+                                    </div>
+                                    <div class="processing-step">
+                                        <div class="processing-dot"></div>
+                                        <small class="text-muted">Creating slide layouts...</small>
+                                    </div>
+                                    <div class="processing-step">
+                                        <div class="processing-dot"></div>
+                                        <small class="text-muted">Applying theme and formatting...</small>
+                                    </div>
+                                </div>
+                                <div id="successMessage" class="alert alert-success d-none">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    <span id="slideCount">0</span> slides generated successfully!
+                                </div>
+                                <div id="actionButtons" class="d-none">
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <button id="presentBtn" class="btn btn-primary w-100"><i class="fas fa-play me-1"></i>Present</button>
+                                        </div>
+                                        <div class="col-6">
+                                            <button id="exportBtn" class="btn btn-success w-100"><i class="fas fa-download me-1"></i>Export</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="previewSection" class="card settings-card d-none">
+                            <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Preview</h5>
+                                <span id="slideCounter" class="slide-counter">1 / 1</span>
+                            </div>
+                            <div class="card-body">
+                                <div id="slidePreview" class="slide-preview mb-3"></div>
+                                <div class="d-flex justify-content-between">
+                                    <button id="prevSlideBtn" class="btn btn-outline-secondary btn-sm"><i class="fas fa-chevron-left me-1"></i>Prev</button>
+                                    <button id="nextSlideBtn" class="btn btn-outline-secondary btn-sm">Next<i class="fas fa-chevron-right ms-1"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="presentationMode" class="presentation-mode">
+        <div class="presentation-slide">
+            <div id="presentationContent" class="presentation-content"></div>
+        </div>
+        <div class="presentation-controls">
+            <div class="d-flex align-items-center gap-3">
+                <button id="exitPresentationBtn" class="btn btn-outline-light btn-sm"><i class="fas fa-times me-1"></i>Exit</button>
+                <span id="presentationCounter" class="text-white">1 / 1</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button id="prevPresentationBtn" class="btn btn-outline-light btn-sm"><i class="fas fa-chevron-left"></i></button>
+                <button id="nextPresentationBtn" class="btn btn-outline-light btn-sm"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PptxGenJS/3.12.0/pptxgen.bundle.js"></script>
+    <script>
+        // Application State
+        let slides = [];
+        let currentSlide = 0;
+        let currentTheme = 'professional';
+
+        const sampleText = `Artificial Intelligence in Modern Business
+
+Artificial Intelligence (AI) has become a transformative force in today's business landscape. Companies across industries are leveraging AI technologies to streamline operations, enhance customer experiences, and drive innovation.
+
+Key Benefits of AI in Business:
+- Automation of repetitive tasks
+- Data-driven decision making
+- Improved customer service through chatbots
+- Predictive analytics for better forecasting
+- Enhanced security and fraud detection
+
+Implementation Strategies:
+1. Start with pilot projects in specific departments
+2. Invest in employee training and development
+3. Ensure data quality and accessibility
+4. Choose the right AI tools and platforms
+5. Monitor and measure results continuously
+
+Challenges and Considerations:
+Despite its benefits, AI implementation comes with challenges including high initial costs, need for skilled personnel, data privacy concerns, and potential job displacement. Companies must address these challenges proactively.
+
+Future Outlook:
+The future of AI in business looks promising with advancing technologies like machine learning, natural language processing, and computer vision. Organizations that embrace AI early will have competitive advantages in the digital economy.
+
+Conclusion:
+AI is not just a technological trend but a fundamental shift in how businesses operate. Success requires strategic planning, proper implementation, and continuous adaptation to emerging AI capabilities.`;
+
+        const themes = {
+            professional: { color: '#1e3a8a', gradient: 'linear-gradient(45deg, #1e3a8a, #3b82f6)' },
+            creative: { color: '#6d28d9', gradient: 'linear-gradient(45deg, #6d28d9, #a855f7)' },
+            corporate: { color: '#047857', gradient: 'linear-gradient(45deg, #047857, #10b981)' },
+            modern: { color: '#b91c1c', gradient: 'linear-gradient(45deg, #b91c1c, #f97316)' }
+        };
+
+        const elements = {
+            inputText: document.getElementById('inputText'),
+            generateBtn: document.getElementById('generateBtn'),
+            processingAnimation: document.getElementById('processingAnimation'),
+            successMessage: document.getElementById('successMessage'),
+            actionButtons: document.getElementById('actionButtons'),
+            previewSection: document.getElementById('previewSection'),
+            slidePreview: document.getElementById('slidePreview'),
+            slideCounter: document.getElementById('slideCounter'),
+            slideCount: document.getElementById('slideCount'),
+            useSampleBtn: document.getElementById('useSampleBtn'),
+            clearTextBtn: document.getElementById('clearTextBtn'),
+            prevSlideBtn: document.getElementById('prevSlideBtn'),
+            nextSlideBtn: document.getElementById('nextSlideBtn'),
+            presentBtn: document.getElementById('presentBtn'),
+            exportBtn: document.getElementById('exportBtn'),
+            themeSelect: document.getElementById('themeSelect'),
+            presentationMode: document.getElementById('presentationMode'),
+            presentationContent: document.getElementById('presentationContent'),
+            presentationCounter: document.getElementById('presentationCounter'),
+            exitPresentationBtn: document.getElementById('exitPresentationBtn'),
+            prevPresentationBtn: document.getElementById('prevPresentationBtn'),
+            nextPresentationBtn: document.getElementById('nextPresentationBtn')
+        };
+
+        // Initialize the application
+        function init() {
+            elements.inputText.value = sampleText;
+            updateTheme();
+            setupEventListeners();
+        }
+
+        // Set up all event listeners
+        function setupEventListeners() {
+            elements.useSampleBtn.addEventListener('click', () => {
+                elements.inputText.value = sampleText;
+            });
+
+            elements.clearTextBtn.addEventListener('click', () => {
+                elements.inputText.value = '';
+            });
+
+            elements.generateBtn.addEventListener('click', generateSlides);
+            elements.prevSlideBtn.addEventListener('click', () => navigateSlide(-1));
+            elements.nextSlideBtn.addEventListener('click', () => navigateSlide(1));
+            elements.presentBtn.addEventListener('click', enterPresentationMode);
+            elements.exitPresentationBtn.addEventListener('click', exitPresentationMode);
+            elements.prevPresentationBtn.addEventListener('click', () => navigatePresentation(-1));
+            elements.nextPresentationBtn.addEventListener('click', () => navigatePresentation(1));
+            elements.themeSelect.addEventListener('change', handleThemeChange);
+            elements.exportBtn.addEventListener('click', exportToPowerPoint);
+
+            // Keyboard navigation
+            document.addEventListener('keydown', handleKeyboardNavigation);
+
+            // Touch events for mobile swipe navigation
+            setupTouchEvents();
+        }
+
+        // Handle theme change
+        function handleThemeChange(e) {
+            currentTheme = e.target.value;
+            updateTheme();
+            if (slides.length > 0) {
+                updateSlidePreview();
+                updatePresentationView();
+            }
+        }
+
+        // Update theme colors
+        function updateTheme() {
+            const theme = themes[currentTheme];
+            document.documentElement.style.setProperty('--theme-professional', theme.color);
+            
+            // Update gradient in the header
+            document.querySelector('.header-section').style.background = theme.gradient;
+            document.querySelector('.btn-generate').style.background = theme.gradient;
+        }
+
+        // Generate slides from input text
+        function generateSlides() {
+            const text = elements.inputText.value.trim();
+            if (!text) {
+                alert('Please enter some text to generate slides.');
+                return;
+            }
+
+            // Show processing state
+            elements.generateBtn.disabled = true;
+            elements.generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+            elements.processingAnimation.classList.add('active');
+            elements.successMessage.classList.add('d-none');
+            elements.actionButtons.classList.add('d-none');
+
+            // Simulate processing delay
+            setTimeout(() => {
+                try {
+                    slides = processTextToSlides(text);
+                    currentSlide = 0;
+
+                    if (slides.length === 0) {
+                        throw new Error('No slides were generated from the input text.');
+                    }
+
+                    // Update UI
+                    elements.slideCount.textContent = slides.length;
+                    elements.successMessage.classList.remove('d-none');
+                    elements.actionButtons.classList.remove('d-none');
+                    elements.previewSection.classList.remove('d-none');
+                    
+                    updateSlidePreview();
+                    updateNavigation();
+                } catch (error) {
+                    alert('Error generating slides: ' + error.message);
+                    console.error(error);
+                } finally {
+                    // Reset processing state
+                    elements.processingAnimation.classList.remove('active');
+                    elements.generateBtn.disabled = false;
+                    elements.generateBtn.innerHTML = '<i class="fas fa-magic me-2"></i>Generate Slides';
+                }
+            }, 2000);
+        }
+
+        // Process text into slides
+        function processTextToSlides(text) {
+            const lines = text.split('\n').filter(line => line.trim());
+            const processedSlides = [];
+            
+            // Check if we should include intro slide
+            if (document.getElementById('includeIntro').checked) {
+                const title = lines[0] || 'Untitled Presentation';
+                processedSlides.push({
+                    id: 1,
+                    type: 'title',
+                    title: title,
+                    subtitle: 'Generated from text using AI',
+                    content: []
+                });
+            }
+
+            let currentSlideContent = null;
+
+            lines.forEach((line, index) => {
+                // Skip first line if we already used it for title slide
+                if (index === 0 && document.getElementById('includeIntro').checked) return;
+
+                const trimmedLine = line.trim();
+
+                // Detect slide titles (lines ending with : or short lines without periods)
+                if (trimmedLine.endsWith(':') || (trimmedLine.length < 100 && !trimmedLine.includes('.'))) {
+                    if (currentSlideContent && currentSlideContent.content.length > 0) {
+                        processedSlides.push(currentSlideContent);
+                    }
+                    currentSlideContent = {
+                        id: processedSlides.length + 1,
+                        type: 'content',
+                        title: trimmedLine.replace(':', ''),
+                        content: []
+                    };
+                } 
+                // Detect bullet points
+                else if (trimmedLine.startsWith('-') || trimmedLine.startsWith('•')) {
+                    if (currentSlideContent) {
+                        currentSlideContent.content.push({
+                            type: 'bullet',
+                            text: trimmedLine.substring(1).trim()
+                        });
+                    }
+                } 
+                // Detect numbered lists
+                else if (/^\d+\./.test(trimmedLine)) {
+                    if (currentSlideContent) {
+                        currentSlideContent.content.push({
+                            type: 'number',
+                            text: trimmedLine.replace(/^\d+\.\s*/, '')
+                        });
+                    }
+                } 
+                // Regular paragraphs
+                else if (trimmedLine.length > 20) {
+                    if (currentSlideContent) {
+                        currentSlideContent.content.push({
+                            type: 'paragraph',
+                            text: trimmedLine
+                        });
+                    } else {
+                        currentSlideContent = {
+                            id: processedSlides.length + 1,
+                            type: 'content',
+                            title: 'Overview',
+                            content: [{ type: 'paragraph', text: trimmedLine }]
+                        };
+                    }
+                }
+            });
+
+            // Add the last slide if it has content
+            if (currentSlideContent && currentSlideContent.content.length > 0) {
+                processedSlides.push(currentSlideContent);
+            }
+
+            // Add conclusion slide if enabled
+            if (document.getElementById('includeConclusion').checked) {
+                processedSlides.push({
+                    id: processedSlides.length + 1,
+                    type: 'conclusion',
+                    title: 'Thank You',
+                    subtitle: 'Questions & Discussion',
+                    content: []
+                });
+            }
+
+            return processedSlides;
+        }
+
+        // Update slide preview in the UI
+        function updateSlidePreview() {
+            if (slides.length === 0) return;
+
+            const slide = slides[currentSlide];
+            elements.slidePreview.innerHTML = renderSlideContent(slide);
+            elements.slideCounter.textContent = `${currentSlide + 1} / ${slides.length}`;
+        }
+
+        // Render slide content HTML
+        function renderSlideContent(slide) {
+            const theme = themes[currentTheme];
+            const fontSize = getFontSize();
+
+            if (slide.type === 'title') {
+                return `
+                    <div class="slide-content justify-content-center align-items-center text-center">
+                        <h1 class="slide-title" style="color: ${theme.color}; font-size: ${fontSize.title};">${slide.title}</h1>
+                        <p class="slide-subtitle" style="font-size: ${fontSize.subtitle};">${slide.subtitle}</p>
+                        <div class="mt-4">
+                            <i class="fas fa-sparkles text-primary me-2"></i>
+                            <small class="text-muted">AI-Generated Presentation</small>
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (slide.type === 'conclusion') {
+                return `
+                    <div class="slide-content justify-content-center align-items-center text-center">
+                        <h1 class="slide-title" style="color: ${theme.color}; font-size: ${fontSize.title};">${slide.title}</h1>
+                        <p class="slide-subtitle" style="font-size: ${fontSize.subtitle};">${slide.subtitle}</p>
+                        <div class="mt-4 p-3 bg-light rounded">
+                            <i class="fas fa-check-circle text-success me-2" style="font-size: 1.5rem;"></i>
+                            <p class="text-muted mb-0">Presentation completed successfully</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            let contentHtml = `
+                <div class="slide-content">
+                    <h2 class="slide-title" style="color: ${theme.color}; font-size: ${fontSize.title};">${slide.title}</h2>
+                    <div class="slide-body" style="font-size: ${fontSize.body};">
+            `;
+
+            let numberedIndex = 1;
+            slide.content.forEach(item => {
+                if (item.type === 'bullet') {
+                    contentHtml += `
+                        <div class="bullet-point">
+                            <div class="bullet-icon" style="background: ${theme.color};"></div>
+                            <span>${item.text}</span>
+                        </div>
+                    `;
+                } else if (item.type === 'number') {
+                    contentHtml += `
+                        <div class="numbered-point">
+                            <div class="number-badge" style="background: ${theme.color};">${numberedIndex}</div>
+                            <span>${item.text}</span>
+                        </div>
+                    `;
+                    numberedIndex++;
+                } else if (item.type === 'paragraph') {
+                    contentHtml += `
+                        <p class="mb-3" style="line-height: 1.6;">${item.text}</p>
+                    `;
+                }
+            });
+
+            contentHtml += `</div></div>`;
+            return contentHtml;
+        }
+
+        // Get font sizes based on selection
+        function getFontSize() {
+            return {
+                small: { title: '1.5rem', subtitle: '0.9rem', body: '0.8rem' },
+                medium: { title: '1.8rem', subtitle: '1rem', body: '0.9rem' },
+                large: { title: '2.2rem', subtitle: '1.2rem', body: '1rem' }
+            }[document.getElementById('fontSizeSelect').value];
+        }
+
+        // Navigation functions
+        function navigateSlide(direction) {
+            const newSlide = currentSlide + direction;
+            if (newSlide >= 0 && newSlide < slides.length) {
+                currentSlide = newSlide;
+                updateSlidePreview();
+                updateNavigation();
+            }
+        }
+
+        function navigatePresentation(direction) {
+            const newSlide = currentSlide + direction;
+            if (newSlide >= 0 && newSlide < slides.length) {
+                currentSlide = newSlide;
+                updatePresentationView();
+                updatePresentationNavigation();
+            }
+        }
+
+        function updateNavigation() {
+            elements.prevSlideBtn.disabled = currentSlide === 0;
+            elements.nextSlideBtn.disabled = currentSlide === slides.length - 1;
+        }
+
+        function updatePresentationNavigation() {
+            elements.prevPresentationBtn.disabled = currentSlide === 0;
+            elements.nextPresentationBtn.disabled = currentSlide === slides.length - 1;
+            elements.presentationCounter.textContent = `${currentSlide + 1} / ${slides.length}`;
+        }
+
+        // Presentation mode functions
+        function enterPresentationMode() {
+            if (slides.length === 0) return;
+            elements.presentationMode.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            updatePresentationView();
+            updatePresentationNavigation();
+        }
+
+        function exitPresentationMode() {
+            elements.presentationMode.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        function updatePresentationView() {
+            if (slides.length === 0) return;
+            const slide = slides[currentSlide];
+            elements.presentationContent.innerHTML = renderPresentationSlide(slide);
+        }
+
+        function renderPresentationSlide(slide) {
+            const theme = themes[currentTheme];
+            const fontSize = {
+                small: { title: '2.5rem', subtitle: '1.5rem', body: '1.2rem' },
+                medium: { title: '3.5rem', subtitle: '2rem', body: '1.5rem' },
+                large: { title: '4rem', subtitle: '2.5rem', body: '1.8rem' }
+            }[document.getElementById('fontSizeSelect').value];
+
+            if (slide.type === 'title') {
+                return `
+                    <div class="d-flex flex-column justify-content-center align-items-center text-center h-100">
+                        <h1 style="color: ${theme.color}; font-size: ${fontSize.title}; margin-bottom: 2rem;">${slide.title}</h1>
+                        <p style="font-size: ${fontSize.subtitle}; color: #6b7280; margin-bottom: 3rem;">${slide.subtitle}</p>
+                        <div class="mt-4">
+                            <i class="fas fa-sparkles me-3" style="color: ${theme.color}; font-size: 1.5rem;"></i>
+                            <span style="font-size: ${fontSize.body}; color: #6b7280;">AI-Generated Presentation</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (slide.type === 'conclusion') {
+                return `
+                    <div class="d-flex flex-column justify-content-center align-items-center text-center h-100">
+                        <h1 style="color: ${theme.color}; font-size: ${fontSize.title}; margin-bottom: 2rem;">${slide.title}</h1>
+                        <p style="font-size: ${fontSize.subtitle}; color: #6b7280; margin-bottom: 3rem;">${slide.subtitle}</p>
+                        <div class="mt-4 p-4 bg-light rounded-3">
+                            <i class="fas fa-check-circle text-success me-3" style="font-size: 2rem;"></i>
+                            <p style="font-size: ${fontSize.body}; color: #6b7280; margin: 0;">Presentation completed successfully</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            let contentHtml = `
+                <div class="h-100">
+                    <h2 style="color: ${theme.color}; font-size: ${fontSize.title}; margin-bottom: 2rem;">${slide.title}</h2>
+                    <div style="font-size: ${fontSize.body}; line-height: 1.8;">
+            `;
+
+            let numberedIndex = 1;
+            slide.content.forEach(item => {
+                if (item.type === 'bullet') {
+                    contentHtml += `
+                        <div class="d-flex align-items-start mb-4">
+                            <div style="width: 12px; height: 12px; background: ${theme.color}; border-radius: 50%; margin-top: 12px; margin-right: 1.5rem;"></div>
+                            <span>${item.text}</span>
+                        </div>
+                    `;
+                } else if (item.type === 'number') {
+                    contentHtml += `
+                        <div class="d-flex align-items-start mb-4">
+                            <div style="width: 40px; height: 40px; background: ${theme.color}; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 1.5rem;">${numberedIndex}</div>
+                            <span style="margin-top: 8px;">${item.text}</span>
+                        </div>
+                    `;
+                    numberedIndex++;
+                } else if (item.type === 'paragraph') {
+                    contentHtml += `
+                        <p class="mb-4" style="line-height: 1.8;">${item.text}</p>
+                    `;
+                }
+            });
+
+            contentHtml += `</div></div>`;
+            return contentHtml;
+        }
+
+        // Export to PowerPoint
+        function exportToPowerPoint() {
+            if (slides.length === 0) {
+                alert('No slides to export. Please generate slides first.');
+                return;
+            }
+
+            const pptx = new PptxGenJS();
+            const theme = themes[currentTheme];
+            const fontSize = getFontSizeForPPT();
+
+            // Set presentation properties
+            pptx.title = slides[0].type === 'title' ? slides[0].title : 'Generated Presentation';
+            pptx.author = 'Text to PowerPoint Converter';
+            
+            // Create slides
+            slides.forEach((slide, index) => {
+                const pptxSlide = pptx.addSlide();
+                
+                // Background color
+                pptxSlide.background = { color: 'FFFFFF' };
+                
+                // Title slide
+                if (slide.type === 'title') {
+                    pptxSlide.addText(slide.title, {
+                        x: 0.5,
+                        y: 1.5,
+                        w: '90%',
+                        h: 1.5,
+                        fontSize: 36,
+                        bold: true,
+                        color: theme.color,
+                        align: 'center'
+                    });
+                    
+                    pptxSlide.addText(slide.subtitle, {
+                        x: 0.5,
+                        y: 3.0,
+                        w: '90%',
+                        h: 1.0,
+                        fontSize: 24,
+                        color: '666666',
+                        align: 'center'
+                    });
+                    
+                    pptxSlide.addText('AI-Generated Presentation', {
+                        x: 0.5,
+                        y: 4.5,
+                        w: '90%',
+                        h: 0.5,
+                        fontSize: 14,
+                        color: '999999',
+                        align: 'center'
+                    });
+                } 
+                // Conclusion slide
+                else if (slide.type === 'conclusion') {
+                    pptxSlide.addText(slide.title, {
+                        x: 0.5,
+                        y: 1.5,
+                        w: '90%',
+                        h: 1.5,
+                        fontSize: 36,
+                        bold: true,
+                        color: theme.color,
+                        align: 'center'
+                    });
+                    
+                    pptxSlide.addText(slide.subtitle, {
+                        x: 0.5,
+                        y: 3.0,
+                        w: '90%',
+                        h: 1.0,
+                        fontSize: 24,
+                        color: '666666',
+                        align: 'center'
+                    });
+                    
+                    pptxSlide.addText('Presentation completed successfully', {
+                        x: 0.5,
+                        y: 4.5,
+                        w: '90%',
+                        h: 0.5,
+                        fontSize: 14,
+                        color: '999999',
+                        align: 'center'
+                    });
+                } 
+                // Content slides
+                else {
+                    // Add title
+                    pptxSlide.addText(slide.title, {
+                        x: 0.5,
+                        y: 0.5,
+                        w: '90%',
+                        h: 0.8,
+                        fontSize: fontSize.title,
+                        bold: true,
+                        color: theme.color
+                    });
+                    
+                    // Add content
+                    let yPosition = 1.5;
+                    let numberedIndex = 1;
+                    
+                    slide.content.forEach(item => {
+                        if (item.type === 'bullet') {
+                            pptxSlide.addText(`• ${item.text}`, {
+                                x: 0.7,
+                                y: yPosition,
+                                w: '85%',
+                                h: 0.5,
+                                fontSize: fontSize.body,
+                                bullet: true,
+                                indentLevel: 0,
+                                color: '333333'
+                            });
+                            yPosition += 0.5;
+                        } else if (item.type === 'number') {
+                            pptxSlide.addText(`${numberedIndex}. ${item.text}`, {
+                                x: 0.7,
+                                y: yPosition,
+                                w: '85%',
+                                h: 0.5,
+                                fontSize: fontSize.body,
+                                bullet: { type: 'number', code: '1' },
+                                indentLevel: 0,
+                                color: '333333'
+                            });
+                            yPosition += 0.5;
+                            numberedIndex++;
+                        } else if (item.type === 'paragraph') {
+                            pptxSlide.addText(item.text, {
+                                x: 0.7,
+                                y: yPosition,
+                                w: '85%',
+                                h: 0.8,
+                                fontSize: fontSize.body,
+                                color: '333333'
+                            });
+                            yPosition += 0.8;
+                        }
+                    });
+                }
+            });
+
+            // Download the presentation
+            pptx.writeFile({
+                fileName: 'GeneratedPresentation.pptx',
+                compression: true
+            });
+        }
+
+        // Get font sizes for PowerPoint export
+        function getFontSizeForPPT() {
+            return {
+                small: { title: 24, body: 12 },
+                medium: { title: 28, body: 14 },
+                large: { title: 32, body: 16 }
+            }[document.getElementById('fontSizeSelect').value];
+        }
+
+        // Keyboard navigation
+        function handleKeyboardNavigation(e) {
+            if (elements.presentationMode.classList.contains('active')) {
+                if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+                    navigatePresentation(1);
+                    e.preventDefault();
+                } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                    navigatePresentation(-1);
+                    e.preventDefault();
+                } else if (e.key === 'Escape') {
+                    exitPresentationMode();
+                    e.preventDefault();
+                }
+            } else {
+                if (e.key === 'ArrowRight' && document.activeElement !== elements.inputText) {
+                    navigateSlide(1);
+                    e.preventDefault();
+                } else if (e.key === 'ArrowLeft' && document.activeElement !== elements.inputText) {
+                    navigateSlide(-1);
+                    e.preventDefault();
+                }
+            }
+        }
+
+        // Touch events for mobile swipe navigation
+        function setupTouchEvents() {
+            let touchStartX = 0;
+            let touchStartY = 0;
+
+            elements.slidePreview.addEventListener('touchstart', (e) => {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            });
+
+            elements.slidePreview.addEventListener('touchend', (e) => {
+                if (!touchStartX || !touchStartY) return;
+                const touchEndX = e.changedTouches[0].clientX;
+                const touchEndY = e.changedTouches[0].clientY;
+                const diffX = touchStartX - touchEndX;
+                const diffY = touchStartY - touchEndY;
+                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                    if (diffX > 0) navigateSlide(1);
+                    else navigateSlide(-1);
+                }
+                touchStartX = 0;
+                touchStartY = 0;
+            });
+
+            elements.presentationContent.addEventListener('touchstart', (e) => {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            });
+
+            elements.presentationContent.addEventListener('touchend', (e) => {
+                if (!touchStartX || !touchStartY) return;
+                const touchEndX = e.changedTouches[0].clientX;
+                const touchEndY = e.changedTouches[0].clientY;
+                const diffX = touchStartX - touchEndX;
+                const diffY = touchStartY - touchEndY;
+                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                    if (diffX > 0) navigatePresentation(1);
+                    else navigatePresentation(-1);
+                }
+                touchStartX = 0;
+                touchStartY = 0;
+            });
+        }
+
+        // Initialize the application when DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+  
+   <!-- Add this script tag for PptxGenJS -->
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Your existing JavaScript code with these modifications:
+
+        // Replace the exportToPowerPoint function with this corrected version:
+        function exportToPowerPoint() {
+            if (slides.length === 0) {
+                alert('No slides to export. Please generate slides first.');
+                return;
+            }
+
+            try {
+                // Create a new presentation
+                const pptx = new PptxGenJS();
+                const theme = themes[currentTheme];
+                
+                // Set presentation properties
+                pptx.title = slides[0].type === 'title' ? slides[0].title : 'Generated Presentation';
+                pptx.author = 'Text to PowerPoint Converter';
+                
+                // Define font sizes based on selection
+                const fontSize = {
+                    small: { title: 24, body: 12 },
+                    medium: { title: 28, body: 14 },
+                    large: { title: 32, body: 16 }
+                }[document.getElementById('fontSizeSelect').value];
+
+                // Create slides
+                slides.forEach((slide, index) => {
+                    const pptxSlide = pptx.addSlide();
+                    
+                    // Set background color
+                    pptxSlide.background = { color: 'FFFFFF' };
+                    
+                    // Title slide
+                    if (slide.type === 'title') {
+                        pptxSlide.addText([
+                            { text: slide.title, options: { fontSize: 36, bold: true, color: theme.color, align: 'center' } },
+                            { text: '\n'+slide.subtitle, options: { fontSize: 24, color: '666666', align: 'center' } },
+                            { text: '\n\nAI-Generated Presentation', options: { fontSize: 14, color: '999999', align: 'center' } }
+                        ], { x: 1, y: 1, w: '90%', h: 3, align: 'center' });
+                    } 
+                    // Conclusion slide
+                    else if (slide.type === 'conclusion') {
+                        pptxSlide.addText([
+                            { text: slide.title, options: { fontSize: 36, bold: true, color: theme.color, align: 'center' } },
+                            { text: '\n'+slide.subtitle, options: { fontSize: 24, color: '666666', align: 'center' } },
+                            { text: '\n\nPresentation completed successfully', options: { fontSize: 14, color: '999999', align: 'center' } }
+                        ], { x: 1, y: 1, w: '90%', h: 3, align: 'center' });
+                    } 
+                    // Content slides
+                    else {
+                        // Add title
+                        pptxSlide.addText(slide.title, {
+                            x: 0.5,
+                            y: 0.5,
+                            w: '90%',
+                            h: 0.8,
+                            fontSize: fontSize.title,
+                            bold: true,
+                            color: theme.color
+                        });
+                        
+                        // Add content
+                        let yPosition = 1.5;
+                        let numberedIndex = 1;
+                        
+                        slide.content.forEach(item => {
+                            if (item.type === 'bullet') {
+                                pptxSlide.addText(`• ${item.text}`, {
+                                    x: 0.7,
+                                    y: yPosition,
+                                    w: '85%',
+                                    h: 0.5,
+                                    fontSize: fontSize.body,
+                                    bullet: true,
+                                    color: '333333'
+                                });
+                                yPosition += 0.5;
+                            } else if (item.type === 'number') {
+                                pptxSlide.addText(`${numberedIndex}. ${item.text}`, {
+                                    x: 0.7,
+                                    y: yPosition,
+                                    w: '85%',
+                                    h: 0.5,
+                                    fontSize: fontSize.body,
+                                    bullet: { type: 'number' },
+                                    color: '333333'
+                                });
+                                yPosition += 0.5;
+                                numberedIndex++;
+                            } else if (item.type === 'paragraph') {
+                                pptxSlide.addText(item.text, {
+                                    x: 0.7,
+                                    y: yPosition,
+                                    w: '85%',
+                                    h: 0.8,
+                                    fontSize: fontSize.body,
+                                    color: '333333'
+                                });
+                                yPosition += 0.8;
+                            }
+                        });
+                    }
+                });
+
+                // Download the presentation
+                pptx.writeFile({
+                    fileName: 'GeneratedPresentation.pptx',
+                    compression: true
+                }).then(() => {
+                    console.log('Presentation downloaded successfully');
+                }).catch(err => {
+                    console.error('Error downloading presentation:', err);
+                    alert('Error exporting presentation. Please try again.');
+                });
+
+            } catch (error) {
+                console.error('Error creating PowerPoint:', error);
+                alert('Error creating PowerPoint file. Please try again.');
+            }
+        }
+
+        // Update the export button event listener to use the corrected function
+        elements.exportBtn.addEventListener('click', exportToPowerPoint);
+
+    </script>
+
+</body>
+</html>
